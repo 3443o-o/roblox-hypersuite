@@ -4,8 +4,12 @@
 * A cross-platform multi-purpose roblox utility.
 
 # This utility currently contains:
-* A bunch of useful macros for glitching in different R6 and R15 games.
+* A bunch of useful macros (with tutorials) for glitching in different R6 and R15 games.
 * A customizable lagswitch.
+* A ping increasor.
+* An XML editor (globalbasicsettings and similar).
+* A rejoin section, to change FPS and rejoin on the same server.
+* Saving settings.
 * A themable user interface.
 
 # Macros:
@@ -15,20 +19,27 @@
 * Buckey clip
 * Speed glitch
 * Spam key
+* Disable head collision
+* No head collision roof clip
+* Helicopter high jump
+* Full gear desync (dropping)
 
 All of these are fully explained in the utility.
-
-# Screenshots
-
-<img width="510" height="410" alt="image" src="https://github.com/user-attachments/assets/c831feec-0653-4a11-87ac-612a524316a4" />
-
-<img width="510" height="412" alt="image" src="https://github.com/user-attachments/assets/83f8807d-14a6-45ce-8e82-19c390e4ff9e" />
-
-<img width="516" height="416" alt="image" src="https://github.com/user-attachments/assets/6a6a987a-eee1-41cb-b791-3970b1af2dd0" />
 
 # Credits
 https://github.com/Spencer0187/Spencer-Macro-Utilities
 
 https://github.com/bornacvitanic/fumble
+
+https://github.com/raysan5/raylib
+
+https://github.com/raylib-extras/rlImGui
+
+https://github.com/ocornut/imgui
+
+https://github.com/zeux/pugixml
+
+https://github.com/nlohmann/json
+
 
 

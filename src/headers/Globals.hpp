@@ -1,10 +1,39 @@
 #pragma once
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+#endif
+
+// Rename Windows functions BEFORE including windows.h
+#define Rectangle Win32Rectangle
+#define CloseWindow Win32CloseWindow
+#define ShowCursor Win32ShowCursor
+#define DrawText Win32DrawText
+#define DrawTextEx Win32DrawTextEx
+#define LoadImage Win32LoadImage
+
+#include <windows.h>
+#include <shellapi.h>
+
+// Restore original names AFTER windows.h
+#undef Rectangle
+#undef CloseWindow
+#undef ShowCursor
+#undef DrawText
+#undef DrawTextEx
+#undef LoadImage
+#endif
 #include <string>
 #include <thread>
 #include <map>
+#include "imgui.h"
 #include "netctrl.hpp"
 #include "inpctrl.hpp"
-#include "imgui.h"
 
 // Inner-workings
 inline netctrl::NetCtrl* g_ctrl = nullptr;

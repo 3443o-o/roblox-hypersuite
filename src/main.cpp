@@ -36,12 +36,11 @@
 #include "MacroLoopHandler.hpp"
 #include "Helper.hpp"
 #include "UserInterface.hpp"
-#include "imgui.h"
-#include "rlImGui.h"
 #include "LoadTextures.hpp"
 #include "SettingsHandler.hpp"
 #include "GlobalBasicSettings.hpp"
-
+#include "imgui.h"
+#include "rlImGui.h"
 
 #include <iostream>
 #include <string>

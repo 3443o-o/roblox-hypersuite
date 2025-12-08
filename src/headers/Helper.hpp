@@ -1,52 +1,45 @@
 #pragma once
-#include <iostream>
-#include <string>
-#include <cstdlib>
-#include <algorithm>
-
-#include "Globals.hpp"
-#include "inpctrl.hpp"
 
 #ifdef _WIN32
-#ifndef NETCTRL_WINDOWS_INCLUDED
-#define NETCTRL_WINDOWS_INCLUDED
+#ifndef HELPER_WINDOWS_INCLUDED
+#define HELPER_WINDOWS_INCLUDED
 #define WIN32_LEAN_AND_MEAN
-
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600  // Windows Vista or newer (TokenElevation)
+#define _WIN32_WINNT 0x0600
 #endif
-
-// Rename Windows functions to avoid conflicts with Raylib
 #define Rectangle Win32Rectangle
 #define CloseWindow Win32CloseWindow
 #define ShowCursor Win32ShowCursor
 #define DrawText Win32DrawText
 #define DrawTextEx Win32DrawTextEx
 #define LoadImage Win32LoadImage
-
 #include <windows.h>
 #include <shellapi.h>
 #include <sddl.h>
 #include <tlhelp32.h>
-
-// Restore original names after Windows header is included
 #undef Rectangle
 #undef CloseWindow
 #undef ShowCursor
 #undef DrawText
 #undef DrawTextEx
 #undef LoadImage
-
 #endif
+#else
 #include <unistd.h>
 #include <pwd.h>
 #include <sys/types.h>
 #endif
 
+// NOW include your other headers
+#include <iostream>
+#include <string>
+#include <cstdlib>
+#include <algorithm>
+#include "Globals.hpp"
+#include "inpctrl.hpp"
 
 inline bool isElevated() {
 #if defined(_WIN32)
@@ -109,31 +102,31 @@ inline bool TryElevate(const char* password)
     // Already elevated?
     if (isElevated())
         return true;
-        
+
 #if defined(__linux__)
     // Get own executable path
     char exePath[4096] = {0};
     readlink("/proc/self/exe", exePath, sizeof(exePath)-1);
-    
+
     // Test if password is correct first
-    std::string testCmd = 
+    std::string testCmd =
         "echo \"" + std::string(password) + "\" | sudo -S -p '' true 2>&1";
     int testResult = system(testCmd.c_str());
-    
+
     // If password test failed, return false
     if (testResult != 0)
         return false;
-    
+
     // Password is correct, now elevate and restart
     std::string cmd =
         "echo \"" + std::string(password) + "\" | sudo -S -p '' \"" + std::string(exePath) + "\" &";
     system(cmd.c_str());
-    
+
     // Give the elevated process a moment to start
     usleep(100000); // 100ms
-    
+
     exit(0); // stop current instance
-    
+
 //#elif defined(_WIN32)
   //  wchar_t exePath[MAX_PATH];
     //GetModuleFileNameW(NULL, exePath, MAX_PATH);
@@ -206,11 +199,11 @@ inline void restartRoblox() {
 #ifdef _WIN32
     // Windows version
     system("taskkill /IM RobloxPlayerBeta.exe /F"); // forcibly close
-    
+
     std::string url;
     bool hasPlaceId = strlen(placeIdBuffer) > 0;
     bool hasInstanceId = strlen(instanceIdBuffer) > 0;
-    
+
     if (hasPlaceId) {
         url = "roblox://experiences/start?placeId=" + std::string(placeIdBuffer);
         if (hasInstanceId) {
@@ -219,29 +212,29 @@ inline void restartRoblox() {
     } else {
         url = "roblox://";
     }
-    
+
     ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 #else
     const char* normalUser = getenv("SUDO_USER");
     if (!normalUser) normalUser = getenv("USER"); // fallback if not using sudo
-    
+
     if (normalUser) {
         // Kill the actual Sober process
         std::string killCmd = "sudo -i -u ";
         killCmd += normalUser;
         killCmd += " bash -c 'killall -9 sober.real >/dev/null 2>&1'";
         std::system(killCmd.c_str());
-        
+
         std::string url;
         bool hasPlaceId = strlen(placeIdBuffer) > 0;
         bool hasInstanceId = strlen(instanceIdBuffer) > 0;
-        
+
         if (hasPlaceId) {
             url = "roblox://experiences/start?placeId=" + std::string(placeIdBuffer);
             if (hasInstanceId) {
                 url += "&gameInstanceId=" + std::string(instanceIdBuffer);
             }
-            
+
             // Launch with xdg-open
             std::string launchCmd = "sudo -i -u ";
             launchCmd += normalUser;
@@ -275,13 +268,13 @@ inline void RunSilent(const std::string &cmd) {
 inline void typeSlashAzerty() {
     input.holdKey(CrossInput::Key::LShift);
     std::this_thread::sleep_for(std::chrono::milliseconds(25));
-    
+
     input.holdKey(CrossInput::Key::Dot);
     std::this_thread::sleep_for(std::chrono::milliseconds(65));
-    
+
     input.releaseKey(CrossInput::Key::Dot);
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    
+
     input.releaseKey(CrossInput::Key::LShift);
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
 }
@@ -299,7 +292,7 @@ inline void showMessageBox(const std::string& title, const std::string& msg) {
 }
 
 inline void bindToMacro(std::string macro_name) {
-    if (!events[3]) { 
+    if (!events[3]) {
         events[3] = true;
         CrossInput::Key userKey = input.getCurrentPressedKey(5000); // 5 sec timeout
         if (userKey != static_cast<CrossInput::Key>(0)) {
@@ -311,7 +304,7 @@ inline void bindToMacro(std::string macro_name) {
 }
 
 inline void BindSpamKey() {
-    if (!events[8]) { 
+    if (!events[8]) {
         events[8] = true;
         CrossInput::Key userKey = input.getCurrentPressedKey(5000); // 5 sec timeout
         if (userKey != static_cast<CrossInput::Key>(0)) {
@@ -323,7 +316,7 @@ inline void BindSpamKey() {
 }
 
 inline void BindVariable(CrossInput::Key* keyLoc) {
-    if (!events[9]) { 
+    if (!events[9]) {
         events[9] = true;
         CrossInput::Key userKey = input.getCurrentPressedKey(5000); // 5 sec timeout
         if (userKey != static_cast<CrossInput::Key>(0)) {

@@ -10,6 +10,7 @@
 #include "LagSwitch.hpp"
 #include "Speedglitch.hpp"
 #include "GlobalBasicSettings.hpp"
+#include <string>
 
 ImVec4 orange = ImVec4(1.0f, 0.55f, 0.1f, 1.0f);
 
@@ -107,19 +108,29 @@ void UpdateUI() {
                 ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoMove |
                 ImGuiWindowFlags_NoCollapse);
-    switch (logzz::current_state) {
-    case OFFLINE:
-        ImGui::Text("Roblox Hypersuite - Currently not on roblox.");
-        break;
-    case IN_LUA_APP:
-        ImGui::Text("Roblox Hypersuite - Currently in the lua app");
-        break;
-    case IN_GAME:
-        ImGui::Text("Roblox Hypersuite - Currently in game, (");
-        break;
-    default:
+    if (is_elevated) {
+        switch (logzz::current_state) {
+            case OFFLINE: {
+                ImGui::Text("Roblox Hypersuite - Currently not on roblox.");
+                break;
+            }
+            case IN_LUA_APP: {
+                ImGui::Text("Roblox Hypersuite - Currently in the lua app");
+                break;
+            }
+            case IN_GAME: {
+                std::string placeName = logzz::find_name_for_universe(logzz::current_universe_ID);
+                std::string text = "Roblox Hypersuite - Currently in game (" + placeName + ")";
+                ImGui::Text("%s", text.c_str());
+                break;
+            }
+            default: {
+                ImGui::Text("Roblox Hypersuite");
+                break;
+            }
+        }
+    } else {
         ImGui::Text("Roblox Hypersuite");
-        break;
     }
 
     ImGui::Separator();
@@ -417,12 +428,37 @@ void UpdateUI() {
 
                 ImGui::Spacing();
             } else {
-                ImGui::Text("Welcome to Roblox Hypersuite!");
+                // Window padding and style
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));
+                ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.2f, 0.2f, 0.25f, 1.0f));
+
+                // Greeting box
+                ImGui::BeginChild("Greeting", ImVec2(0, 60), true);
+                std::string greeting = logzz::current_username.empty()
+                    ? "Hello owner!"
+                    : "Hello " + logzz::current_username + "!";
+                ImGui::TextWrapped("%s", greeting.c_str());
+                ImGui::TextWrapped("Welcome to Roblox Hypersuite!");
+                ImGui::EndChild();
+
+                ImGui::Spacing();
                 ImGui::Separator();
-                ImGui::TextWrapped("↓ Here are some things to know!");
-                ImGui::TextColored(orange, "/ Right click to toggle macro");
-                ImGui::TextColored(orange, "/ Left click to view macro info");
-                ImGui::TextWrapped("Check out the Settings tab, it might be useful to you.");
+                ImGui::Spacing();
+
+                // Info section with bullets
+                ImGui::TextWrapped("↓ Here are some things to know:");
+                ImGui::Spacing();
+
+                ImGui::Bullet(); ImGui::TextColored(orange, "Right click to toggle macro");
+                ImGui::Bullet(); ImGui::TextColored(orange, "Left click to view macro info");
+                ImGui::Bullet(); ImGui::TextColored(orange, "Hold left click and drag to\nmove the window");
+
+                ImGui::Spacing();
+                ImGui::TextWrapped("Check out the Settings tab! It might be useful to you.");
+
+                // Restore styles
+                ImGui::PopStyleColor();
+                ImGui::PopStyleVar();
             }
             ImGui::EndChild();
 

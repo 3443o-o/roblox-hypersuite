@@ -32,7 +32,7 @@ INCLUDES = -I./include \
 # -------------------------------------------------------------------
 LINUX_OBJ_DIR = out/linux
 LINUX_TARGET = build/linux/utility
-LINUX_LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -lssl -lcrypto
+LINUX_LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 LINUX_OBJS = $(patsubst %.cpp,$(LINUX_OBJ_DIR)/%.o,$(SRCS))
 LINUX_DEPS = $(LINUX_OBJS:.o=.d)
 

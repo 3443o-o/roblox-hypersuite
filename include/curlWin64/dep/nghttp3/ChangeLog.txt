@@ -1,0 +1,15 @@
+commit 94f4ff36df2bf4a976878f0645b8483e2d9175c7
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2025-11-24
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2025-11-24
+
+    Bump package and library versions
+
+commit 1473518c2e3818f1680266128cc4c39343498e12
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2025-11-23
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2025-11-23
+
+    Fix header name validation on a platform where char is unsigned

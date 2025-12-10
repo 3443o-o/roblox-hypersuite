@@ -13,6 +13,7 @@ inline void initMacros() {
 }
 
 inline void UpdateMacros() {
+    if (is_elevated) {}
     if (enabled[0]) freezeMacro();
     if (enabled[1]) laughClip();
     if (enabled[2]) extendedDanceClip();

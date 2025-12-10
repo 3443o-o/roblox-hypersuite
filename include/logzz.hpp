@@ -3,7 +3,6 @@
 #include <cstring>
 #include <fstream>
 #include <stdio.h>
-#include <cstring>
 #include <filesystem>
 #include <thread>
 #include <chrono>
@@ -11,14 +10,17 @@
 #include <vector>
 #include <map>
 
+#include "json.hpp"
+using json = nlohmann::json;
+
 #ifdef _WIN32
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
 #else
     #include <sys/stat.h>
-        #if defined(__linux__)
-            #include <fcntl.h>
-        #endif
+    #if defined(__linux__)
+        #include <fcntl.h>
+    #endif
 #endif
 
 inline const unsigned long long CAMFIX_PLACEIDS[1] = {
@@ -29,10 +31,12 @@ namespace fs = std::filesystem;
 
 enum state {IN_GAME, IN_LUA_APP, OFFLINE, INVALID, UNCHANGED_FILE};
 
+// Cross-platform file size calculation
 inline long long calculate_file_size_stat(const char *filepath) {
+    if (!filepath || filepath[0] == '\0') return -1;
+
 #ifdef _WIN32
     WIN32_FILE_ATTRIBUTE_DATA file_info;
-    // GetFileAttributesExA is faster than CreateFile+GetFileSizeEx
     if (GetFileAttributesExA(filepath, GetFileExInfoStandard, &file_info)) {
         LARGE_INTEGER size;
         size.HighPart = file_info.nFileSizeHigh;
@@ -42,15 +46,12 @@ inline long long calculate_file_size_stat(const char *filepath) {
     return -1;
 #else
     #if defined(__linux__)
-        // statx is fastest on Linux (kernel 4.11+)
         struct statx stx;
         if (statx(AT_FDCWD, filepath, 0, STATX_SIZE, &stx) == 0) {
             return stx.stx_size;
         }
-        // Fallback if statx not available
     #endif
 
-    // stat64 for large file support on 32-bit systems
     #if defined(_LARGEFILE64_SOURCE) || defined(__USE_LARGEFILE64)
         struct stat64 file_info;
         if (stat64(filepath, &file_info) == 0) {
@@ -67,47 +68,129 @@ inline long long calculate_file_size_stat(const char *filepath) {
 #endif
 }
 
+// Cross-platform path separator
+inline std::string get_path_separator() {
+#ifdef _WIN32
+    return "\\";
+#else
+    return "/";
+#endif
+}
 
-// Will return current state
 inline namespace logzz {
     inline state current_state = OFFLINE;
     inline state last_state = UNCHANGED_FILE;
     inline std::string logs_folder_path;
+    inline std::string local_storage_folder_path;
     inline unsigned long long current_place_ID = 0;
-    inline long long last_file_size;
+    inline unsigned long long current_universe_ID = 0;
+    inline unsigned long long current_user_ID = 0;
+    inline std::string current_username;
+    inline std::string current_display_name;
+    inline long long last_file_size = -1;
     inline unsigned int camfix_proofs;
     inline bool game_uses_camfix_final;
     inline int game_uses_camfix_percentage;
     inline std::map<unsigned long long, int> calculated_placeIDs;
 
-    //-- camfix shit
-
     inline state loop_handle() {
         logzz::last_state = logzz::current_state;
-        std::string first_log_file;
 
-        for (const auto & entry : fs::directory_iterator(logs_folder_path))
-            first_log_file = entry.path().string();
+        // Validate logs folder path
+        if (logs_folder_path.empty()) {
+            current_state = INVALID;
+            return INVALID;
+        }
 
-        long long current_file_size = calculate_file_size_stat(first_log_file.c_str());
-        if (current_file_size == last_file_size) return UNCHANGED_FILE;
+        // Check if directory exists
+        std::error_code ec;
+        if (!fs::exists(logs_folder_path, ec)) {
+            current_state = INVALID;
+            return INVALID;
+        }
 
-        //log file changed.
+        if (ec) {
+            current_state = INVALID;
+            return INVALID;
+        }
+
+        // Check if it's actually a directory
+        if (!fs::is_directory(logs_folder_path, ec)) {
+            current_state = INVALID;
+            return INVALID;
+        }
+
+        if (ec) {
+            current_state = INVALID;
+            return INVALID;
+        }
+
+        // Get most recent log file with error handling
+        std::string most_recent_log_file;
+        try {
+            bool found_file = false;
+            fs::file_time_type newest_time;
+
+            for (const auto & entry : fs::directory_iterator(logs_folder_path, ec)) {
+                if (ec) {
+                    current_state = INVALID;
+                    return INVALID;
+                }
+
+                if (entry.is_regular_file(ec) && !ec) {
+                    auto file_time = entry.last_write_time(ec);
+                    if (ec) continue;
+
+                    if (!found_file || file_time > newest_time) {
+                        most_recent_log_file = entry.path().string();
+                        newest_time = file_time;
+                        found_file = true;
+                    }
+                }
+            }
+
+            if (!found_file || most_recent_log_file.empty()) {
+                current_state = OFFLINE;
+                return OFFLINE;
+            }
+        } catch (const fs::filesystem_error& e) {
+            printf("[logzz] Filesystem error: %s\n", e.what());
+            current_state = INVALID;
+            return INVALID;
+        } catch (const std::exception& e) {
+            printf("[logzz] Unexpected error: %s\n", e.what());
+            current_state = INVALID;
+            return INVALID;
+        }
+
+        // Check file size
+        long long current_file_size = calculate_file_size_stat(most_recent_log_file.c_str());
+        if (current_file_size < 0) {
+            current_state = INVALID;
+            return INVALID;
+        }
+
+        if (current_file_size == last_file_size) {
+            return UNCHANGED_FILE;
+        }
+
         last_file_size = current_file_size;
 
-        std::ifstream log_file(first_log_file);
+        // Open and read log file
+        std::ifstream log_file(most_recent_log_file);
         if (!log_file.is_open()) {
-            printf("%s\n", "couldn't open file");
+            current_state = INVALID;
             return INVALID;
-        };
+        }
 
         std::string last_place_id_string;
+        std::string last_universe_id_string;
+        int last_universe_id_line = 0;
         int last_place_id_line = 0;
-
         int in_lua_app_line = 0;
         int left_roblox_line = 0;
 
-        // cam fix detection
+        // Cam fix detection variables
         int thistoweruses_line = 0;
         int setpartcollisiongroup_line = 0;
         int clientobjects_line = 0;
@@ -118,21 +201,47 @@ inline namespace logzz {
 
         std::string current_line;
         int line = 0;
-        while (std::getline(log_file, current_line)) {
-            line++;
-            for (int i = 0; i < current_line.size(); i++) {
-                {
-                    size_t join_pos = current_line.find("Joining");
-                        if (join_pos != std::string::npos) {
-                            size_t placeid_index = join_pos + 58;
-                            size_t place_id_end = current_line.find(' ', placeid_index);
-                            if (place_id_end != std::string::npos) {
-                                last_place_id_string = current_line.substr(placeid_index, place_id_end - placeid_index);
-                                last_place_id_line = line;
-                            }
+
+        try {
+            while (std::getline(log_file, current_line)) {
+                line++;
+
+                // Parse joining line
+                size_t join_pos = current_line.find("Joining");
+                if (join_pos != std::string::npos) {
+                    size_t placeid_index = join_pos + 58;
+                    if (placeid_index < current_line.size()) {
+                        size_t place_id_end = current_line.find(' ', placeid_index);
+                        if (place_id_end != std::string::npos) {
+                            last_place_id_string = current_line.substr(placeid_index, place_id_end - placeid_index);
+                            last_place_id_line = line;
                         }
+                    }
                 }
 
+                // Parse universe ID
+                size_t gjlt_pos = current_line.find("FLog::GameJoinLoadTime");
+                if (gjlt_pos != std::string::npos &&
+                    current_line.find("Report game_join_loadtime") != std::string::npos)
+                {
+                    size_t univ_pos = current_line.find("universeid:");
+                    if (univ_pos != std::string::npos) {
+                        univ_pos += std::string("universeid:").size();
+                        size_t end_pos = current_line.find_first_of(", ", univ_pos);
+                        if (end_pos == std::string::npos) {
+                            end_pos = current_line.size();
+                        }
+                        last_universe_id_string = current_line.substr(univ_pos, end_pos - univ_pos);
+                        try {
+                            current_universe_ID = std::stoull(last_universe_id_string);
+                        } catch (...) {
+                            current_universe_ID = 0;
+                        }
+                        last_universe_id_line = line;
+                    }
+                }
+
+                // Parse state changes
                 if (current_line.find("returnToLuaApp") != std::string::npos) {
                     in_lua_app_line = line;
                 }
@@ -140,7 +249,7 @@ inline namespace logzz {
                     left_roblox_line = line;
                 }
 
-                //-- CAMFIX DETECTION
+                // CAMFIX DETECTION
                 if (current_line.find("This tower uses") != std::string::npos) {
                     thistoweruses_line = line;
                 }
@@ -150,8 +259,7 @@ inline namespace logzz {
                 if (current_line.find("ClientParts") != std::string::npos ||
                     current_line.find("ClientObject") != std::string::npos ||
                     current_line.find("ClientSidedObject") != std::string::npos ||
-                    current_line.find("ClientObjectScript") != std::string::npos
-                ) {
+                    current_line.find("ClientObjectScript") != std::string::npos) {
                     clientobjects_line = line;
                 }
                 if (current_line.find("LocalPartScript") != std::string::npos) {
@@ -167,17 +275,29 @@ inline namespace logzz {
                     towerword_line = line;
                 }
             }
-        };
+        } catch (const std::exception& e) {
+            printf("[logzz] Error reading log file: %s\n", e.what());
+            log_file.close();
+            current_state = INVALID;
+            return INVALID;
+        }
 
-        // states
-        if (left_roblox_line > last_place_id_line && left_roblox_line > in_lua_app_line){
+        log_file.close();
+
+        // Determine current state
+        if (left_roblox_line > last_place_id_line && left_roblox_line > in_lua_app_line) {
             current_state = OFFLINE;
         } else if (in_lua_app_line > last_place_id_line) {
             current_state = IN_LUA_APP;
         } else if (in_lua_app_line < last_place_id_line) {
             current_state = IN_GAME;
             if (!last_place_id_string.empty()) {
-                current_place_ID = std::stoull(last_place_id_string);
+                try {
+                    current_place_ID = std::stoull(last_place_id_string);
+                } catch (const std::exception& e) {
+                    printf("[logzz] Error parsing place ID: %s\n", e.what());
+                    current_place_ID = 0;
+                }
             } else {
                 current_place_ID = 0;
             }
@@ -185,11 +305,13 @@ inline namespace logzz {
             current_state = OFFLINE;
         }
 
-        log_file.close();
-
-        //CAM FIX DETECTION
+        // CAMFIX DETECTION
         if (current_state == IN_GAME && current_place_ID > 0) {
-            if (calculated_placeIDs[current_place_ID]) return current_state;
+            if (calculated_placeIDs.find(current_place_ID) != calculated_placeIDs.end() &&
+                calculated_placeIDs[current_place_ID] > 0) {
+                return current_state;
+            }
+
             int score = 0;
 
             if (thistoweruses_line > last_place_id_line) score += 200;
@@ -201,8 +323,102 @@ inline namespace logzz {
             if (playerscripts_line > last_place_id_line) score += 30;
 
             calculated_placeIDs[current_place_ID] = (int)((score / 300.0f) * 100);
-            if (calculated_placeIDs[current_place_ID] > 0) printf("CAMFIX POSSIBILTY: %d % \n", calculated_placeIDs[current_place_ID]);
         }
+
         return current_state;
+    }
+
+    // Returns the place name associated with a universe ID.
+    // Cross-platform. Reads local_storage_folder_path/appStorage.json.
+    inline std::string find_name_for_universe(uint64_t target_universe_id)
+    {
+        std::string file_path = local_storage_folder_path + get_path_separator() + "appStorage.json";
+        std::ifstream f(file_path);
+        if (!f.is_open()) {
+            return "";
+        }
+
+        json root;
+        try {
+            f >> root;
+        } catch (...) {
+            return "";
+        }
+
+        if (!root.contains("DiscoveryClientFallbackCache")) return "";
+
+        // Get the string value
+        std::string cache_str = root["DiscoveryClientFallbackCache"].get<std::string>();
+
+        // Parse the string as JSON
+        json cache_json;
+        try {
+            cache_json = json::parse(cache_str);
+        } catch (...) {
+            return "";
+        }
+
+        // Navigate into "data" -> "contentMetadata" -> "Game"
+        if (!cache_json.contains("data")) return "";
+        const auto& data = cache_json["data"];
+        if (!data.contains("contentMetadata")) return "";
+        const auto& contentMetadata = data["contentMetadata"];
+        if (!contentMetadata.contains("Game")) return "";
+        const auto& games = contentMetadata["Game"];
+
+        // Keys are universe IDs as strings
+        std::string key = std::to_string(target_universe_id);
+        if (!games.contains(key)) return "";
+
+        const auto& entry = games[key];
+        if (!entry.contains("name") || !entry["name"].is_string()) return "";
+
+        return entry["name"].get<std::string>();
+    }
+
+    // Loads user information from appStorage.json
+    // Updates current_user_ID, current_username, and current_display_name
+    inline bool load_user_info()
+    {
+        std::string file_path = local_storage_folder_path + get_path_separator() + "appStorage.json";
+        std::ifstream f(file_path);
+        if (!f.is_open()) {
+            printf("[logzz] Could not open appStorage.json\n");
+            return false;
+        }
+
+        json root;
+        try {
+            f >> root;
+        } catch (...) {
+            printf("[logzz] Failed to parse appStorage.json\n");
+            return false;
+        }
+
+        // Extract UserId
+        if (root.contains("UserId")) {
+            try {
+                if (root["UserId"].is_string()) {
+                    current_user_ID = std::stoull(root["UserId"].get<std::string>());
+                } else if (root["UserId"].is_number()) {
+                    current_user_ID = root["UserId"].get<uint64_t>();
+                }
+            } catch (...) {
+                printf("[logzz] Failed to parse UserId\n");
+                current_user_ID = 0;
+            }
+        }
+
+        // Extract Username
+        if (root.contains("Username") && root["Username"].is_string()) {
+            current_username = root["Username"].get<std::string>();
+        }
+
+        // Extract DisplayName
+        if (root.contains("DisplayName") && root["DisplayName"].is_string()) {
+            current_display_name = root["DisplayName"].get<std::string>();
+        }
+
+        return true;
     }
 }

@@ -1,4 +1,3 @@
-#include "headers/obstructive/WebAPI.hpp"
 #define Font RaylibFont   // temporarily rename Raylib's Font
 
 #include "raylib.h"
@@ -39,6 +38,7 @@
 #include "Helper.hpp"
 #include "RobloxFiles.hpp"
 #include "UserInterface.hpp"
+
 #include "LoadTextures.hpp"
 #include "SettingsHandler.hpp"
 #include "GlobalBasicSettings.hpp"
@@ -75,17 +75,21 @@ int main() {
     SetWindowIcon(icon);                           // Sets taskbar + title bar icon
     UnloadImage(icon);                             // Free image memory
     logzz::logs_folder_path = getRobloxAppDataDirectory() + "\\logs";
+    logzz::local_storage_folder_path = getRobloxAppDataDirectory() + "\\LocalStorage";
 #else
     roblox_process_name = "sober";
     logzz::logs_folder_path = getRobloxAppDataDirectory() + "/logs";
+    logzz::local_storage_folder_path = getRobloxAppDataDirectory() + "/LocalStorage";
 #endif
 
     kb_layout = 0;
-
     SetTargetFPS(60);
-    testrealok();
     //-------- LOADING THE FREAKING SETTINGS
     SettingsHandler::LoadSettings();
+
+    // getting the username, userid, display name etc.. from appstorage.json
+    logzz::load_user_info();
+
     //Initializes the user interface.
     initUI();
     LoadAllSprites();

@@ -5,6 +5,7 @@
 #include "rlImGui.h"
 #include "Globals.hpp"
 #include "inpctrl.hpp"
+#include "logzz.hpp"
 #include "Helper.hpp"
 #include "LagSwitch.hpp"
 #include "Speedglitch.hpp"
@@ -106,7 +107,21 @@ void UpdateUI() {
                 ImGuiWindowFlags_NoResize |
                 ImGuiWindowFlags_NoMove |
                 ImGuiWindowFlags_NoCollapse);
-    ImGui::Text("Roblox Hypersuite");
+    switch (logzz::current_state) {
+    case OFFLINE:
+        ImGui::Text("Roblox Hypersuite - Currently not on roblox.");
+        break;
+    case IN_LUA_APP:
+        ImGui::Text("Roblox Hypersuite - Currently in the lua app");
+        break;
+    case IN_GAME:
+        ImGui::Text("Roblox Hypersuite - Currently in game, (");
+        break;
+    default:
+        ImGui::Text("Roblox Hypersuite");
+        break;
+    }
+
     ImGui::Separator();
     if (!is_elevated) {
 #ifdef _WIN32

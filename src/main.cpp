@@ -1,3 +1,4 @@
+#include "headers/obstructive/WebAPI.hpp"
 #define Font RaylibFont   // temporarily rename Raylib's Font
 
 #include "raylib.h"
@@ -32,9 +33,11 @@
 #include "Globals.hpp"
 #include "procctrl.hpp"
 #include "netctrl.hpp"
+#include "logzz.hpp"
 #include "LagSwitch.hpp"
 #include "MacroLoopHandler.hpp"
 #include "Helper.hpp"
+#include "RobloxFiles.hpp"
 #include "UserInterface.hpp"
 #include "LoadTextures.hpp"
 #include "SettingsHandler.hpp"
@@ -59,8 +62,8 @@ int main() {
 #endif
     is_elevated = isElevated();
     if (is_elevated) {
-        InitWindow(500, 400, "3443's Roblox Utilities");
-    } else InitWindow(300, 150, "3443's Roblox Utilities");
+        InitWindow(500, 400, "Roblox hypersuite");
+    } else InitWindow(300, 150, "Roblox hypersuite");
 
     screen_width = GetScreenWidth();
     screen_height = GetScreenHeight();
@@ -71,20 +74,21 @@ int main() {
     Image icon = LoadImage("resources/logo.png");
     SetWindowIcon(icon);                           // Sets taskbar + title bar icon
     UnloadImage(icon);                             // Free image memory
+    logzz::logs_folder_path = getRobloxAppDataDirectory() + "\\logs";
 #else
     roblox_process_name = "sober";
+    logzz::logs_folder_path = getRobloxAppDataDirectory() + "/logs";
 #endif
 
     kb_layout = 0;
 
     SetTargetFPS(60);
-
+    testrealok();
     //-------- LOADING THE FREAKING SETTINGS
     SettingsHandler::LoadSettings();
     //Initializes the user interface.
     initUI();
     LoadAllSprites();
-
     // For globalbasicsettings
     if (GlobalBasicSettingsFile == "empty") setGBSFileDirectory();
 
@@ -109,6 +113,7 @@ int main() {
 
     while (!WindowShouldClose()) {
        UpdateMacros();
+       logzz::loop_handle();
 
        if (resizable_window != lastResizable) {
             if (resizable_window)

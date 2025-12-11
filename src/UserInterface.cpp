@@ -214,6 +214,8 @@ void UpdateUI() {
                     CodeName = "HHJ";
                 } else if (std::string(label) == "Full Gear Desync") {
                     CodeName = "Full-Gear-Desync";
+                } else if (std::string(label) == "Floor Bounce High Jump") {
+                    CodeName = "Floor-Bounce-High-Jump";
                 }
 
                 // Determine if this option is enabled
@@ -285,6 +287,7 @@ void UpdateUI() {
             DrawOptionButton("NHC Roof Clip");
             DrawOptionButton("Helicopter High Jump");
             DrawOptionButton("Full Gear Desync");
+            DrawOptionButton("Floor Bounce High Jump");
 
             ImGui::EndChild();
 
@@ -427,6 +430,12 @@ void UpdateUI() {
                 ImGui::PopItemWidth();
 
                 ImGui::Spacing();
+            }  else if (current_option == "Floor Bounce High Jump") {
+                ImGui::Text("Floor Bounce High Jump information:");
+                ImGui::Separator();
+                ImGui::TextWrapped("This macro allows you to jump 15+ studs vertically without anything!");
+                ImGui::TextWrapped("To do this, just. Have 240 fps or more. That's it.\n\n");
+                ImGui::TextWrapped("After this, it's pretty straightforward, just trigger the macro! And you should get the high jump once every 3 attempts.");
             } else {
                 // Window padding and style
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 15));

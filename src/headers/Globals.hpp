@@ -88,7 +88,7 @@ inline char placeIdBuffer[32] = "";  // buffer for Place ID input
 inline char instanceIdBuffer[64] = "";  // buffer for Instance ID (UUID format)
 
 // Debounces
-inline bool events[15] {
+inline bool events[16] {
     false, // Freeze
     false, // Laugh clip
     false, // E-Dance clip
@@ -104,24 +104,26 @@ inline bool events[15] {
     false, // helicopter high jump
     false, // gear desync
     false, // full gear desync
+    false, // floor bounce hj
 };
 
-inline bool enabled[15] {
+inline bool enabled[16] {
     true, // Freeze
     true, // Laugh clip
     false, // E-Dance clip
     false, // align
-    true, // For lag switch
-    true, // buckey clip
+    false, // For lag switch
+    false, // buckey clip
     false, // Speed glitch
     false, // Gear clip
     false, // align / filler
     false, // align / filler
-    true, // disable head collision
-    true, // NHC roof clip
-    true, // helicopter high jump
-    true, // gear desync
-    true, // full gear desync
+    false, // disable head collision
+    false, // NHC roof clip
+    false, // helicopter high jump
+    false, // gear desync
+    false, // full gear desync
+    true, // floor bounce high jump
 };
 
 inline std::map<std::string, CrossInput::Key> Binds = {
@@ -137,6 +139,7 @@ inline std::map<std::string, CrossInput::Key> Binds = {
     {"HHJ", CrossInput::Key::Num8}, // Helicopter high jump
     {"Gear-Desync", CrossInput::Key::Num7}, // Gear desync
     {"Full-Gear-Desync", CrossInput::Key::Numpad0}, // Full Gear desync
+    {"Floor-Bounce-High-Jump", CrossInput::Key::Numpad1}, // floor bounce hj
 };
 
 inline unsigned short kb_layout;

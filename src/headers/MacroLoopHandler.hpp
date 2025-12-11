@@ -26,4 +26,5 @@ inline void UpdateMacros() {
     if (enabled[12]) helicopterHighJump();
     //if (enabled[13]) gearDesyncMacro();
     if (enabled[14]) FullGearDesync();
+    if (enabled[15]) FloorBounceHighJump();
 }

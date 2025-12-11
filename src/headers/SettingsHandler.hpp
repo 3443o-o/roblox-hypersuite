@@ -34,7 +34,7 @@ inline namespace SettingsHandler {
         j["kb_layout"] = kb_layout;
 
         //-- Saves state
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < sizeof(enabled) / sizeof(enabled[0]); i++) {
             j["enabled"][std::to_string(i)] = enabled[i];
         }
 

@@ -259,3 +259,26 @@ inline void FullGearDesync() {
         log("Full Gear Desync finished");
     }
 }
+
+inline void FloorBounceHighJump() {
+    bool key_pressed = input.isKeyPressed(Binds["Floor-Bounce-High-Jump"]);
+    if (key_pressed && !events[15]) {
+        events[15] = true;
+        log("Floor bounce high jump triggered");
+
+        input.holdKey(CrossInput::Key::Space);
+        std::this_thread::sleep_for(std::chrono::milliseconds(521));  // Fall timing
+        procctrl::suspend_processes_by_name(roblox_process_name);     // Freeze to clip through floor
+        std::this_thread::sleep_for(std::chrono::milliseconds(72));   // Stay clipped
+        procctrl::resume_processes_by_name(roblox_process_name);      // Register underground position
+        std::this_thread::sleep_for(std::chrono::milliseconds(72));   // Let correction force build
+        procctrl::suspend_processes_by_name(roblox_process_name);     // Freeze the ejection force
+        std::this_thread::sleep_for(std::chrono::milliseconds(72));   // Hold the power
+        procctrl::resume_processes_by_name(roblox_process_name);      // LAUNCH
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        input.releaseKey(CrossInput::Key::Space);
+
+        events[15] = false;
+        log("Floor bounce high jump finished");
+    }
+}

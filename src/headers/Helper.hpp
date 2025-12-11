@@ -352,5 +352,7 @@ inline unsigned short GetIDFromCodeName(std::string CodeName) {
         return 13;
     } else if (CodeName == "Full-Gear-Desync") {
         return 14;
+    } else if (CodeName == "Floor-Bounce-High-Jump") {
+        return 15;
     } else return 2000;
 }

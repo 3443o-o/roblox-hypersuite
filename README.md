@@ -2,10 +2,10 @@
 
 # Roblox Hypersuite
 
-A cross-platform multi-purpose Roblox utility with advanced scripting capabilities.
-
 > [!WARNING]
 > This repo is OUTDATED (I got banned from github), updated repo at: https://gitlab.com/3443e/roblox-hypersuite
+
+A cross-platform multi-purpose Roblox utility with advanced scripting capabilities.
 
 ## Features
 
